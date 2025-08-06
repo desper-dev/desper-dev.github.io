@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Revolver Duel - Enhanced Edition</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;700&display=swap');
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: linear-gradient(to bottom, #87CEEB 0%, #FFE4B5 40%, #DEB887 60%, #8B7355 100%);
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      position: relative;
+    }
+    
+    /* Animated dust particles */
+    .dust-particle {
+      position: absolute;
+      width: 2px;
+      height: 2px;
+      background: rgba(139, 69, 19, 0.3);
+      border-radius: 50%;
+      animation: float 10s infinite linear;
+    }
+    
+    @keyframes float {
+      from {
+        transform: translateX(-100px) translateY(100vh);
+      }
+      to {
+        transform: translateX(100px) translateY(-100px);
+      }
+    }
+    
+    .game-container {
+      text-align: center;
+      background: linear-gradient(135deg, rgba(0,0,0,0.85), rgba(139,69,19,0.7));
+      padding: 1.5rem;
+      border-radius: 20px;
+      box-shadow: 
+        0 0 50px rgba(0,0,0,0.5),
+        inset 0 0 30px rgba(139,69,19,0.3);
+      max-width: 650px;
+      width: 95%;
+      position: relative;
+      border: 3px solid rgba(139,69,19,0.5);
+      backdrop-filter: blur(5px);
+    }
+    
+    h1 {
+      font-family: 'Bebas Neue', cursive;
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      text-shadow: 
+        3px 3px 6px rgba(0,0,0,0.9),
+        0 0 20px rgba(255,170,0,0.5);
+      color: #FFD700;
+      letter-spacing: 3px;
+      animation: titleGlow 2s ease-in-out infinite alternate;
+    }
+    
+    @keyframes titleGlow {
+      from { text-shadow: 3px 3px 6px rgba(0,0,0,0.9), 0 0 20px rgba(255,170,0,0.5); }
+      to { text-shadow: 3px 3px 6px rgba(0,0,0,0.9), 0 0 30px rgba(255,170,0,0.8); }
+    }
+    
+    .countdown {
+      font-family: 'Bebas Neue', cursive;
+      font-size: 2.8rem;
+      font-weight: bold;
+      margin: 1rem 0 0.5rem 0;
+      min-height: 3.5rem;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+      letter-spacing: 2px;
+      transition: all 0.3s ease;
+    }
+    
+    .countdown.draw {
+      color: #ff4444;
+      animation: pulse 0.3s infinite, shake 0.1s infinite;
+      font-size: 3.5rem;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.15); }
+    }
+    
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-2px); }
+      75% { transform: translateX(2px); }
+    }
+    
+    .draw-timer {
+      font-size: 1.3rem;
+      font-weight: bold;
+      color: #FFD700;
+      margin-bottom: 0.5rem;
+      min-height: 1.8rem;
+      text-shadow: 2px 2px 3px #000;
+      font-family: 'Bebas Neue', cursive;
+      letter-spacing: 1px;
+    }
+    
+    .meter-container {
+      position: absolute;
+      right: 20px;
+      top: 20px;
+      width: 60px;
+      z-index: 30;
+    }
+    
+    .meter-label {
+      font-size: 0.8rem;
+      margin-bottom: 0.5rem;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #FFD700;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      transform: rotate(180deg);
+      text-align: center;
+    }
+    
+    .meter-background {
+      width: 36px;
+      height: 300px;
+      background: linear-gradient(to top, #1a1a1a, #333);
+      border: 3px solid #8B4513;
+      border-radius: 18px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 
+        inset 0 2px 5px rgba(0,0,0,0.5),
+        0 2px 5px rgba(0,0,0,0.3);
+      margin: 0 auto;
+    }
+    
+    .meter-fill {
+      width: 100%;
+      background: linear-gradient(to top, 
+        #ff3333 0%, 
+        #ff6633 20%, 
+        #ffaa00 40%, 
+        #44ff44 60%, 
+        #ffaa00 80%, 
+        #ff3333 100%);
+      height: 0%;
+      transition: height 0.15s ease-out;
+      border-radius: 15px;
+      box-shadow: 
+        0 0 10px rgba(255,255,255,0.3),
+        inset 0 -2px 5px rgba(0,0,0,0.2);
+      position: absolute;
+      bottom: 0;
+      overflow: hidden;
+    }
+    
+    .meter-fill::after {
+      content: '';
+      position: absolute;
+      bottom: -100%;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(to top, 
+        transparent, 
+        rgba(255,255,255,0.3), 
+        transparent);
+      animation: shimmerVertical 2s infinite;
+    }
+    
+    @keyframes shimmerVertical {
+      0% { bottom: -100%; }
+      100% { bottom: 100%; }
+    }
+    
+    .meter-optimal-zone {
+      position: absolute;
+      bottom: 60%;
+      width: 100%;
+      height: 14%;
+      background: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 5px,
+        rgba(255,255,255,0.1) 5px,
+        rgba(255,255,255,0.1) 10px
+      );
+      border-top: 2px solid #FFD700;
+      border-bottom: 2px solid #FFD700;
+      box-shadow: 
+        0 0 10px rgba(255,215,0,0.5),
+        inset 0 0 5px rgba(255,215,0,0.2);
+    }
+    
+    .meter-percentage {
+      margin-top: 0.5rem;
+      font-size: 0.9rem;
+      font-weight: bold;
+      transition: all 0.2s ease;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+      text-align: center;
+    }
+    
+    .instructions {
+      margin: 1.2rem 0 1rem 0;
+      background: linear-gradient(135deg, rgba(139,69,19,0.3), rgba(0,0,0,0.3));
+      padding: 0.8rem;
+      border-radius: 12px;
+      border: 1px solid rgba(139,69,19,0.5);
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
+    }
+    
+    .instructions p {
+      margin: 0.3rem 0;
+      font-size: 0.95rem;
+    }
+    
+    .instructions strong {
+      color: #FFD700;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    }
+    
+    .result {
+      font-family: 'Bebas Neue', cursive;
+      font-size: 1.8rem;
+      font-weight: bold;
+      margin: 1.2rem 0 0.5rem 0;
+      min-height: 2.2rem;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+      letter-spacing: 1px;
+      transition: all 0.3s ease;
+    }
+    
+    .result.win { 
+      color: #44ff44;
+      animation: winPulse 0.5s ease-out;
+    }
+    
+    .result.lose { 
+      color: #ff4444;
+      animation: losePulse 0.5s ease-out;
+    }
+    
+    .result.early { 
+      color: #ffaa00;
+      animation: earlyPulse 0.5s ease-out;
+    }
+    
+    @keyframes winPulse {
+      0% { transform: scale(0.8); opacity: 0; }
+      50% { transform: scale(1.2); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    
+    @keyframes losePulse {
+      0% { transform: scale(1.5) rotate(-5deg); opacity: 0; }
+      100% { transform: scale(1) rotate(0); opacity: 1; }
+    }
+    
+    @keyframes earlyPulse {
+      0% { transform: translateY(-20px); opacity: 0; }
+      100% { transform: translateY(0); opacity: 1; }
+    }
+    
+    .stats {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 1rem;
+      font-size: 1.1rem;
+      background: linear-gradient(135deg, rgba(139,69,19,0.3), rgba(0,0,0,0.3));
+      padding: 0.8rem;
+      border-radius: 12px;
+      border: 1px solid rgba(139,69,19,0.5);
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
+    }
+    
+    .stats > div {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .stats span {
+      font-weight: bold;
+      color: #FFD700;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    }
+    
+    .duel-svg {
+      width: 100%;
+      max-width: 440px;
+      height: 240px;
+      margin: 0 auto 0.5rem auto;
+      display: block;
+      background: linear-gradient(to bottom, #87CEEB 0%, #FFE4B5 50%, #DEB887 100%);
+      border-radius: 15px;
+      box-shadow: 
+        0 5px 15px rgba(0,0,0,0.3),
+        inset 0 0 20px rgba(139,69,19,0.1);
+      position: relative;
+      z-index: 1;
+      border: 2px solid rgba(139,69,19,0.3);
+    }
+    
+    .arm-svg {
+      width: 100%;
+      max-width: 440px;
+      height: 140px;
+      margin: 0 auto;
+      display: block;
+      position: relative;
+      z-index: 50;
+      pointer-events: none;
+      margin-top: -70px;
+      filter: drop-shadow(0 5px 10px rgba(0,0,0,0.3));
+    }
+    
+    .draw-timer-container {
+      position: absolute;
+      left: 50%;
+      top: 0;
+      transform: translateX(-50%) translateY(-10px);
+      width: 100%;
+      z-index: 20;
+      pointer-events: none;
+    }
+    
+    /* Visual effects */
+    .flash {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: radial-gradient(circle, rgba(255,255,255,0.8), transparent);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 100;
+    }
+    
+    .flash.active {
+      animation: gunFlash 0.2s ease-out;
+    }
+    
+    @keyframes gunFlash {
+      0% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+    
+    /* Improved button styling */
+    .key-hint {
+      display: inline-block;
+      background: linear-gradient(135deg, #8B4513, #A0522D);
+      color: #FFD700;
+      padding: 0.2rem 0.5rem;
+      border-radius: 5px;
+      font-weight: bold;
+      box-shadow: 
+        0 2px 5px rgba(0,0,0,0.3),
+        inset 0 1px 2px rgba(255,255,255,0.2);
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    }
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <div class="flash" id="flash"></div>
+    <div class="draw-timer-container">
+      <div class="draw-timer" id="drawTimer"></div>
+    </div>
+    <h1>🔫 REVOLVER DUEL 🔫</h1>
+    <svg class="duel-svg" id="duelSVG" viewBox="0 0 440 240"></svg>
+    <svg class="arm-svg" id="armSVG" viewBox="0 0 440 140"></svg>
+    <div class="countdown" id="countdown">Press SPACE or A to start</div>
+    <div class="meter-container">
+      <div class="meter-label">⚡ STABILITY ⚡</div>
+      <div class="meter-background">
+        <div class="meter-fill" id="meterFill"></div>
+        <div class="meter-optimal-zone"></div>
+      </div>
+      <div class="meter-percentage" id="meterPercentage">0%</div>
+    </div>
+    <div class="instructions">
+      <p>Press <span class="key-hint">A</span> repeatedly to steady your aim</p>
+      <p>Press <span class="key-hint">SPACE</span> to shoot when "DRAW!" appears</p>
+      <p>Press <span class="key-hint">R</span> to restart at any time</p>
+      <p>🎯 Sweet spot: 67% stability for perfect accuracy</p>
+    </div>
+    <div class="result" id="result"></div>
+    <div class="stats">
+      <div>🏆 Wins: <span id="wins">0</span></div>
+      <div>💀 Losses: <span id="losses">0</span></div>
+      <div>⚡ Streak: <span id="streak">0</span></div>
+    </div>
+  </div>
+  
+  <script>
+    // Create dust particles for atmosphere
+    function createDustParticles() {
+      for (let i = 0; i < 20; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'dust-particle';
+        particle.style.left = Math.random() * 100 + '%';
+        particle.style.animationDelay = Math.random() * 10 + 's';
+        particle.style.animationDuration = (10 + Math.random() * 10) + 's';
+        document.body.appendChild(particle);
+      }
+    }
+    
+    // Enhanced SVG Drawing Functions
+    function drawOpponent(svg, pose, opponentArmValue, hit = false) {
+      svg.innerHTML = '';
+      
+      // Add ground shadow
+      svg.innerHTML += '<ellipse cx="220" cy="210" rx="40" ry="15" fill="rgba(0,0,0,0.2)"/>';
+      
+      // Body with vest details
+      svg.innerHTML += '<ellipse cx="220" cy="150" rx="35" ry="55" fill="#8B4513" stroke="#654321" stroke-width="2"/>';
+      svg.innerHTML += '<rect x="195" y="130" width="50" height="40" rx="5" fill="#654321"/>';
+      svg.innerHTML += '<circle cx="205" cy="140" r="3" fill="#444"/>';
+      svg.innerHTML += '<circle cx="235" cy="140" r="3" fill="#444"/>';
+      svg.innerHTML += '<circle cx="205" cy="155" r="3" fill="#444"/>';
+      svg.innerHTML += '<circle cx="235" cy="155" r="3" fill="#444"/>';
+      
+      // Head with more detail
+      const headColor = hit ? '#ff6666' : '#f7d7b4';
+      svg.innerHTML += `<ellipse cx="220" cy="80" rx="24" ry="26" fill="${headColor}" stroke="#a86b2d" stroke-width="2"/>`;
+      
+      // Hat with band
+      svg.innerHTML += '<ellipse cx="220" cy="62" rx="30" ry="10" fill="#3e2723"/>';
+      svg.innerHTML += '<rect x="198" y="44" width="44" height="20" rx="8" fill="#5d4037" stroke="#3e2723" stroke-width="2"/>';
+      svg.innerHTML += '<rect x="198" y="54" width="44" height="3" fill="#8B4513"/>';
+      
+      // Face details
+      if (!hit) {
+        // Eyes with pupils
+        svg.innerHTML += '<ellipse cx="210" cy="82" rx="4" ry="5" fill="#fff"/>';
+        svg.innerHTML += '<ellipse cx="230" cy="82" rx="4" ry="5" fill="#fff"/>';
+        svg.innerHTML += '<circle cx="211" cy="83" r="2" fill="#333"/>';
+        svg.innerHTML += '<circle cx="229" cy="83" r="2" fill="#333"/>';
+        
+        // Mustache
+        svg.innerHTML += '<path d="M205 92 Q220 95 235 92" stroke="#654321" stroke-width="2" fill="none"/>';
+        
+        // Expression based on pose
+        if (pose === 'draw') {
+          svg.innerHTML += '<path d="M210 98 Q220 95 230 98" stroke="#654321" stroke-width="2" fill="none"/>'; // Grimace
+        } else {
+          svg.innerHTML += '<path d="M210 96 Q220 100 230 96" stroke="#654321" stroke-width="2" fill="none"/>'; // Smile
+        }
+      } else {
+        // X eyes for hit
+        svg.innerHTML += '<path d="M206 78 L214 86 M214 78 L206 86" stroke="#333" stroke-width="2"/>';
+        svg.innerHTML += '<path d="M226 78 L234 86 M234 78 L226 86" stroke="#333" stroke-width="2"/>';
+        svg.innerHTML += '<path d="M210 96 Q220 92 230 96" stroke="#654321" stroke-width="2" fill="none"/>'; // Frown
+      }
+      
+      // Left arm (static)
+      svg.innerHTML += '<rect x="175" y="130" width="20" height="10" rx="5" fill="#f7d7b4" stroke="#a86b2d" stroke-width="2"/>';
+      svg.innerHTML += '<circle cx="170" cy="135" r="8" fill="#f7d7b4" stroke="#a86b2d" stroke-width="2"/>';
+      
+      // Right arm with gun (animated)
+      let angle = -60 * (opponentArmValue / 100);
+      let armX = 245, armY = 130;
+      
+      svg.innerHTML += `<g transform="rotate(${angle} ${armX} ${armY})">
+        <rect x="${armX}" y="${armY-5}" width="20" height="10" rx="5" fill="#f7d7b4" stroke="#a86b2d" stroke-width="2"/>
+        <circle cx="${armX+20}" cy="${armY}" r="8" fill="#f7d7b4" stroke="#a86b2d" stroke-width="2"/>
+        <rect x="${armX+22}" y="${armY-4}" width="25" height="8" rx="2" fill="#2c2c2c" stroke="#000" stroke-width="1"/>
+        <rect x="${armX+47}" y="${armY-3}" width="15" height="6" rx="1" fill="#666"/>
+        <circle cx="${armX+32}" cy="${armY+4}" r="3" fill="#444"/>
+      </g>`;
+      
+      // Belt with holster
+      svg.innerHTML += '<rect x="190" y="190" width="60" height="12" rx="6" fill="#654321" stroke="#3e2723" stroke-width="2"/>';
+      svg.innerHTML += '<rect x="210" y="188" width="20" height="4" fill="#FFD700"/>';
+      svg.innerHTML += '<rect x="185" y="195" width="15" height="20" rx="3" fill="#3e2723"/>';
+      
+      // Add smoke effect if shooting
+      if (pose === 'draw' && opponentArmValue >= 100) {
+        svg.innerHTML += `
+          <circle cx="280" cy="100" r="8" fill="rgba(150,150,150,0.3)" opacity="0">
+            <animate attributeName="opacity" from="0.7" to="0" dur="1s" begin="0s"/>
+            <animate attributeName="r" from="8" to="20" dur="1s" begin="0s"/>
+          </circle>
+        `;
+      }
+    }
+    
+    function drawArm(svg, meterValue, shooting = false) {
+      svg.innerHTML = '';
+      
+      // Calculate arm position and rotation - moved to right third
+      const baseY = 140;
+      const targetY = -20;
+      const y = baseY - (baseY - targetY) * (meterValue / 100);
+      
+      // Arm group with rotation - positioned at right third (293px from left edge of 440px width)
+      const armX = 293, armY = y + 15;
+      const rotation = -90 - (meterValue / 100) * 10; // Slight additional rotation as arm rises
+      
+      svg.innerHTML += `<g transform="rotate(${rotation} ${armX} ${armY})">
+        <!-- Sleeve -->
+        <rect x="${armX-45}" y="${y-5}" width="50" height="30" rx="12" fill="#8B4513" stroke="#654321" stroke-width="2"/>
+        
+        <!-- Arm -->
+        <rect x="${armX-45}" y="${y}" width="90" height="24" rx="12" fill="#f7d7b4" stroke="#a86b2d" stroke-width="3"/>
+        
+        <!-- Hand -->
+        <ellipse cx="${armX+45}" cy="${y+12}" rx="15" ry="15" fill="#f7d7b4" stroke="#a86b2d" stroke-width="3"/>
+        
+        <!-- Fingers on grip -->
+        <rect x="${armX+38}" y="${y+8}" width="4" height="12" rx="2" fill="#e2a86b"/>
+        <rect x="${armX+42}" y="${y+6}" width="4" height="12" rx="2" fill="#e2a86b"/>
+        <rect x="${armX+46}" y="${y+5}" width="4" height="12" rx="2" fill="#e2a86b"/>
+        
+        <!-- Revolver -->
+        <g transform="translate(${armX+50}, ${y+12})">
+          <!-- Grip -->
+          <rect x="0" y="-8" width="20" height="16" rx="4" fill="#654321" stroke="#3e2723" stroke-width="2"/>
+          
+          <!-- Cylinder -->
+          <ellipse cx="25" cy="0" rx="12" ry="10" fill="#2c2c2c" stroke="#000" stroke-width="2"/>
+          <circle cx="22" cy="-3" r="2" fill="#444"/>
+          <circle cx="28" cy="-3" r="2" fill="#444"/>
+          <circle cx="22" cy="3" r="2" fill="#444"/>
+          <circle cx="28" cy="3" r="2" fill="#444"/>
+          
+          <!-- Barrel -->
+          <rect x="35" y="-5" width="35" height="10" rx="3" fill="#444" stroke="#000" stroke-width="2"/>
+          <rect x="70" y="-4" width="8" height="8" rx="2" fill="#666"/>
+          
+          <!-- Trigger guard -->
+          <path d="M15 8 Q20 14 25 8" stroke="#2c2c2c" stroke-width="2" fill="none"/>
+          
+          <!-- Hammer -->
+          <rect x="8" y="-12" width="6" height="8" rx="2" fill="#666" stroke="#444" stroke-width="1"/>
+        </g>
+        
+        ${shooting ? `
+          <!-- Muzzle flash -->
+          <ellipse cx="${armX+128}" cy="${y+12}" rx="20" ry="15" fill="rgba(255,200,0,0.8)" opacity="0">
+            <animate attributeName="opacity" from="1" to="0" dur="0.2s" begin="0s"/>
+            <animate attributeName="rx" from="20" to="30" dur="0.2s" begin="0s"/>
+          </ellipse>
+          
+          <!-- Smoke -->
+          <circle cx="${armX+135}" cy="${y+12}" r="10" fill="rgba(150,150,150,0.5)" opacity="0">
+            <animate attributeName="opacity" from="0.8" to="0" dur="1.5s" begin="0.2s"/>
+            <animate attributeName="r" from="10" to="25" dur="1.5s" begin="0.2s"/>
+            <animate attributeName="cy" from="${y+12}" to="${y-10}" dur="1.5s" begin="0.2s"/>
+          </circle>
+        ` : ''}
+      </g>`;
+    }
+    
+    // Enhanced Game Class
+    class RevolverDuel {
+      constructor() {
+        this.gameState = 'waiting';
+        this.meterValue = 0;
+        this.countdownTimer = null;
+        this.gameTimer = null;
+        this.drawTime = null;
+        this.opponentReactionTime = 0;
+        this.wins = 0;
+        this.losses = 0;
+        this.streak = 0;
+        this.early = false;
+        this.opponentArmValue = 0;
+        this.countdownMillis = 3000;
+        this.countdownStart = null;
+        this.drawTimerInterval = null;
+        this.lastShotAccuracy = 0;
+        this.opponentHit = false;
+        
+        this.elements = {
+          countdown: document.getElementById('countdown'),
+          meterFill: document.getElementById('meterFill'),
+          meterPercentage: document.getElementById('meterPercentage'),
+          result: document.getElementById('result'),
+          wins: document.getElementById('wins'),
+          losses: document.getElementById('losses'),
+          streak: document.getElementById('streak'),
+          duelSVG: document.getElementById('duelSVG'),
+          armSVG: document.getElementById('armSVG'),
+          drawTimer: document.getElementById('drawTimer'),
+          flash: document.getElementById('flash')
+        };
+        
+        this.keys = {
+          a: false,
+          space: false,
+          r: false,
+          aPressed: false
+        };
+        
+        this.bindEvents();
+        this.updateDisplay();
+        drawOpponent(this.elements.duelSVG, 'ready', 0);
+        drawArm(this.elements.armSVG, 0);
+        this.startMeterUpdate();
+      }
+      
+      bindEvents() {
+        document.addEventListener('keydown', (e) => this.handleKeyDown(e));
+        document.addEventListener('keyup', (e) => this.handleKeyUp(e));
+      }
+      
+      handleKeyDown(e) {
+        const key = e.key.toLowerCase();
+        
+        if (key === ' ' && !this.keys.space) {
+          this.keys.space = true;
+          if (this.gameState === 'waiting') {
+            this.startGame();
+          } else if (this.gameState === 'draw') {
+            this.shoot();
+          } else if (this.gameState === 'countdown') {
+            this.earlyShot();
+          }
+        }
+        
+        if (key === 'a' && !this.keys.a) {
+          this.keys.a = true;
+          this.keys.aPressed = true;
+          
+          // Allow A key to start the game when waiting
+          if (this.gameState === 'waiting') {
+            this.startGame();
+          }
+          
+          // Visual feedback for key press
+          this.elements.meterPercentage.style.transform = 'scale(1.1)';
+          setTimeout(() => {
+            this.elements.meterPercentage.style.transform = 'scale(1)';
+          }, 100);
+        }
+        
+        if (key === 'r' && !this.keys.r) {
+          this.keys.r = true;
+          this.forceReset();
+        }
+        
+        e.preventDefault();
+      }
+      
+      handleKeyUp(e) {
+        const key = e.key.toLowerCase();
+        if (key === ' ') this.keys.space = false;
+        if (key === 'a') this.keys.a = false;
+        if (key === 'r') this.keys.r = false;
+      }
+      
+      forceReset() {
+        // Clear all timers
+        if (this.countdownTimer) clearInterval(this.countdownTimer);
+        if (this.gameTimer) clearInterval(this.gameTimer);
+        if (this.drawTimerInterval) clearInterval(this.drawTimerInterval);
+        
+        // Reset game state
+        this.gameState = 'waiting';
+        this.meterValue = 0;
+        this.early = false;
+        this.opponentArmValue = 0;
+        this.opponentHit = false;
+        
+        // Reset UI
+        this.elements.countdown.textContent = 'Press SPACE or A to start';
+        this.elements.countdown.className = 'countdown';
+        this.elements.drawTimer.textContent = '';
+        this.elements.result.textContent = '';
+        this.elements.result.className = 'result';
+        
+        // Redraw graphics
+        drawOpponent(this.elements.duelSVG, 'ready', 0);
+        drawArm(this.elements.armSVG, 0);
+        
+        // Restart meter update
+        this.startMeterUpdate();
+      }
+      
+      startGame() {
+        this.gameState = 'countdown';
+        this.meterValue = 0;
+        this.early = false;
+        this.opponentArmValue = 0;
+        this.opponentHit = false;
+        this.elements.result.textContent = '';
+        this.elements.result.className = 'result';
+        this.opponentReactionTime = 0.2 + Math.random() * 0.3;
+        this.countdownStart = Date.now();
+        this.startCountdown();
+        drawOpponent(this.elements.duelSVG, 'ready', 0);
+        this.elements.drawTimer.textContent = '';
+        if (this.drawTimerInterval) clearInterval(this.drawTimerInterval);
+      }
+      
+      startCountdown() {
+        this.opponentArmValue = 0;
+        
+        const updateCountdown = () => {
+          if (this.gameState !== 'countdown') return;
+          
+          const elapsed = Date.now() - this.countdownStart;
+          const remaining = Math.max(0, this.countdownMillis - elapsed);
+          
+          if (remaining > 0) {
+            this.elements.countdown.textContent = (remaining / 1000).toFixed(2) + 's';
+            
+            // Smooth opponent arm animation
+            let progress = 1 - (remaining / this.countdownMillis);
+            this.opponentArmValue = progress * 100;
+            drawOpponent(this.elements.duelSVG, 'ready', this.opponentArmValue);
+            
+            requestAnimationFrame(updateCountdown);
+          } else {
+            this.elements.countdown.textContent = 'DRAW!';
+            this.elements.countdown.className = 'countdown draw';
+            this.gameState = 'draw';
+            this.drawTime = Date.now();
+            this.opponentArmValue = 100;
+            drawOpponent(this.elements.duelSVG, 'draw', 100);
+            this.startDrawTimer();
+            
+            setTimeout(() => {
+              if (this.gameState === 'draw') {
+                this.opponentShoot();
+              }
+            }, this.opponentReactionTime * 1000);
+          }
+        };
+        
+        updateCountdown();
+      }
+      
+      startDrawTimer() {
+        if (this.drawTimerInterval) clearInterval(this.drawTimerInterval);
+        this.elements.drawTimer.textContent = '0.000s';
+        
+        this.drawTimerInterval = setInterval(() => {
+          if (this.gameState !== 'draw') {
+            clearInterval(this.drawTimerInterval);
+            return;
+          }
+          const elapsed = Date.now() - this.drawTime;
+          this.elements.drawTimer.textContent = (elapsed / 1000).toFixed(3) + 's';
+        }, 16);
+      }
+      
+      startMeterUpdate() {
+        if (this.gameTimer) clearInterval(this.gameTimer);
+        this.gameTimer = setInterval(() => {
+          this.updateMeter();
+          this.updateDisplay();
+        }, 16);
+      }
+      
+      updateMeter() {
+        if (this.gameState === 'result') return;
+        
+        // Discrete press increases meter by 16%
+        if (this.keys.aPressed) {
+          this.meterValue = Math.min(100, this.meterValue + 16);
+          this.keys.aPressed = false;
+        }
+        
+        // Deterioration with acceleration
+        const deteriorationRate = 0.8 + Math.pow(this.meterValue / 100, 2) * 1.5;
+        this.meterValue = Math.max(0, this.meterValue - deteriorationRate);
+      }
+      
+      calculateAccuracy() {
+        const optimalPoint = 67;
+        if (this.meterValue <= optimalPoint) {
+          return (this.meterValue / optimalPoint) * 100;
+        } else {
+          const overfill = this.meterValue - optimalPoint;
+          const maxOverfill = 100 - optimalPoint;
+          const penaltyRatio = overfill / maxOverfill;
+          return 100 - (penaltyRatio * 50);
+        }
+      }
+      
+      triggerFlash() {
+        this.elements.flash.classList.add('active');
+        setTimeout(() => {
+          this.elements.flash.classList.remove('active');
+        }, 200);
+      }
+      
+      shoot() {
+        if (this.gameState !== 'draw') return;
+        
+        const reactionTime = (Date.now() - this.drawTime) / 1000;
+        const accuracy = this.calculateAccuracy();
+        this.lastShotAccuracy = accuracy;
+        
+        this.gameState = 'result';
+        clearInterval(this.gameTimer);
+        if (this.drawTimerInterval) clearInterval(this.drawTimerInterval);
+        
+        // Show shooting animation
+        drawArm(this.elements.armSVG, this.meterValue, true);
+        this.triggerFlash();
+        
+        // Determine outcome
+        if (reactionTime < this.opponentReactionTime) {
+          const hitChance = accuracy;
+          const hit = Math.random() * 100 < hitChance;
+          
+          if (hit) {
+            this.opponentHit = true;
+            drawOpponent(this.elements.duelSVG, 'draw', 100, true);
+            this.win(`PERFECT SHOT! (${accuracy.toFixed(1)}% accuracy, ${reactionTime.toFixed(3)}s)`);
+          } else {
+            this.lose(`MISSED! (${accuracy.toFixed(1)}% accuracy)`);
+          }
+        } else {
+          const opponentAccuracy = 60 + Math.random() * 30;
+          const opponentHit = Math.random() * 100 < opponentAccuracy;
+          
+          if (opponentHit) {
+            this.lose(`TOO SLOW! Opponent drew faster`);
+          } else {
+            const hitChance = accuracy * 0.7;
+            const hit = Math.random() * 100 < hitChance;
+            
+            if (hit) {
+              this.opponentHit = true;
+              drawOpponent(this.elements.duelSVG, 'draw', 100, true);
+              this.win(`CLUTCH WIN! Opponent missed (${accuracy.toFixed(1)}% accuracy)`);
+            } else {
+              this.lose(`DRAW! Both missed`);
+            }
+          }
+        }
+      }
+      
+      earlyShot() {
+        if (this.gameState !== 'countdown') return;
+        
+        this.gameState = 'result';
+        this.early = true;
+        clearInterval(this.gameTimer);
+        if (this.drawTimerInterval) clearInterval(this.drawTimerInterval);
+        
+        drawArm(this.elements.armSVG, this.meterValue, true);
+        this.triggerFlash();
+        
+        this.lose('DISHONORABLE! Shot before the draw');
+        this.elements.result.className = 'result early';
+        drawOpponent(this.elements.duelSVG, 'ready', this.opponentArmValue);
+      }
+      
+      opponentShoot() {
+        if (this.gameState !== 'draw') return;
+        
+        this.gameState = 'result';
+        clearInterval(this.gameTimer);
+        if (this.drawTimerInterval) clearInterval(this.drawTimerInterval);
+        
+        const opponentAccuracy = 60 + Math.random() * 30;
+        const opponentHit = Math.random() * 100 < opponentAccuracy;
+        
+        if (opponentHit) {
+          this.lose('DEFEATED! Too slow on the draw');
+        } else {
+          this.lose('LUCKY! Opponent missed, but you were too slow');
+        }
+      }
+      
+      win(message) {
+        this.wins++;
+        this.streak++;
+        this.elements.result.textContent = '🎯 ' + message;
+        this.elements.result.className = 'result win';
+        this.elements.wins.textContent = this.wins;
+        this.elements.streak.textContent = this.streak;
+        this.resetGame();
+      }
+      
+      lose(message) {
+        this.losses++;
+        this.streak = 0;
+        this.elements.result.textContent = '💀 ' + message;
+        if (!this.early) {
+          this.elements.result.className = 'result lose';
+        }
+        this.elements.losses.textContent = this.losses;
+        this.elements.streak.textContent = this.streak;
+        this.resetGame();
+      }
+      
+      resetGame() {
+        setTimeout(() => {
+          if (this.gameState === 'result') { // Only reset if still in result state
+            this.gameState = 'waiting';
+            this.elements.countdown.textContent = 'Press SPACE or A to start';
+            this.elements.countdown.className = 'countdown';
+            this.elements.drawTimer.textContent = '';
+            drawOpponent(this.elements.duelSVG, 'ready', 0);
+            drawArm(this.elements.armSVG, 0);
+            this.startMeterUpdate();
+          }
+        }, 3000);
+      }
+      
+      updateDisplay() {
+        const percentage = Math.round(this.meterValue);
+        this.elements.meterFill.style.height = percentage + '%';
+        this.elements.meterPercentage.textContent = percentage + '%';
+        
+        // Dynamic color based on accuracy
+        const accuracy = this.calculateAccuracy();
+        if (accuracy >= 90) {
+          this.elements.meterPercentage.style.color = '#44ff44';
+        } else if (accuracy >= 70) {
+          this.elements.meterPercentage.style.color = '#ffaa00';
+        } else {
+          this.elements.meterPercentage.style.color = '#ff4444';
+        }
+        
+        // Update arm position
+        if (this.gameState !== 'result') {
+          drawArm(this.elements.armSVG, this.meterValue);
+        }
+        
+        // Update opponent based on state
+        if (this.gameState === 'countdown') {
+          drawOpponent(this.elements.duelSVG, 'ready', this.opponentArmValue);
+        } else if (this.gameState === 'draw' && !this.opponentHit) {
+          drawOpponent(this.elements.duelSVG, 'draw', 100);
+        }
+      }
+    }
+    
+    // Initialize game
+    document.addEventListener('DOMContentLoaded', () => {
+      createDustParticles();
+      new RevolverDuel();
+    });
+  </script>
+</body>
+</html>
