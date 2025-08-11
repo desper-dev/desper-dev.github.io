@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Simple Kanban Board</title>
+    <style>
+        /* General Styles */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            padding: 20px 0;
+            background-color: #4CAF50;
+            color: white;
+            margin: 0;
+        }
+        /* Navbar Styles */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #333;
+            padding: 10px 20px;
+            color: white;
+        }
+        .navbar .boards {
+            display: flex;
+            align-items: center;
+        }
+        .navbar select {
+            padding: 5px;
+            margin-right: 10px;
+        }
+        .navbar button {
+            padding: 5px 10px;
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            cursor: pointer;
+            margin-right: 5px;
+        }
+        .navbar button:hover {
+            background-color: #45a049;
+        }
+        /* Board Styles */
+        .board-container {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px;
+            flex-wrap: wrap;
+        }
+        .column {
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            width: 22%;
+            padding: 10px;
+            min-height: 400px;
+            position: relative;
+            margin-bottom: 20px;
+        }
+        .column h2 {
+            text-align: center;
+            color: #444;
+            position: sticky;
+            top: 0;
+            background-color: #e0e0e0;
+            margin: 0;
+            padding: 10px;
+            z-index: 2;
+        }
+        .tasks {
+            min-height: 300px;
+        }
+        .task {
+            background-color: white;
+            border-radius: 3px;
+            padding: 10px;
+            margin-bottom: 10px;
+            cursor: move;
+            border-left: 5px solid #4CAF50;
+            position: relative;
+        }
+        .task:hover {
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .task-title {
+            font-weight: bold;
+            margin-top: 15px;
+            margin-bottom: 5px;
+        }
+        .task-details {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        .task-labels {
+            margin-bottom: 5px;
+        }
+        .task-label {
+            display: inline-block;
+            background-color: #2196F3;
+            color: white;
+            border-radius: 3px;
+            padding: 2px 5px;
+            margin-right: 3px;
+            font-size: 0.8em;
+        }
+        .task-timestamp {
+            font-size: 0.75em;
+            color: #999;
+            position: absolute;
+            top: 5px;
+            right: 10px;
+        }
+        .add-task {
+            margin-top: 10px;
+        }
+        .add-task input[type="text"],
+        .add-task input[type="date"],
+        .add-task select {
+            width: calc(100% - 10px);
+            padding: 5px;
+            margin-bottom: 5px;
+        }
+        .add-task button {
+            width: 100%;
+            padding: 5px;
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            cursor: pointer;
+        }
+        .add-task button:hover {
+            background-color: #45a049;
+        }
+        button {
+            padding: 5px 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .delete-btn {
+            background-color: #f44336;
+        }
+        .delete-btn:hover {
+            background-color: #da190b;
+        }
+        .edit-btn {
+            background-color: #2196F3;
+        }
+        .edit-btn:hover {
+            background-color: #0b7dda;
+        }
+        .move-btn {
+            background-color: #FF9800;
+        }
+        .move-btn:hover {
+            background-color: #e68a00;
+        }
+        .edit-form {
+            display: none;
+            margin-top: 10px;
+        }
+        .edit-form input[type="text"],
+        .edit-form input[type="date"],
+        .edit-form select {
+            width: calc(100% - 10px);
+            padding: 5px;
+            margin-bottom: 5px;
+        }
+        .task-buttons {
+            display: flex;
+            justify-content: space-between;
+        }
+        .drag-over {
+            border: 2px dashed #4CAF50;
+            background-color: rgba(76, 175, 80, 0.1);
+        }
+        .priority-high {
+            border-left-color: #f44336;
+        }
+        .priority-medium {
+            border-left-color: #FF9800;
+        }
+        .priority-low {
+            border-left-color: #4CAF50;
+        }
+		 .navbar .import-export {
+            display: flex;
+            align-items: center;
+        }
+        .navbar .import-export button {
+            margin-left: 10px; /* Add some spacing between buttons */
+        }
+        .task.highlight {
+            box-shadow: 0 0 10px #4CAF50;
+            border: 2px solid #4CAF50;
+        }
+
+        .navbar .search {
+            display: flex;
+            align-items: center;
+        }
+
+        .navbar .search input {
+            padding: 5px;
+            margin-right: 5px;
+            width: 200px;
+        }
+		.modal {
+			display: none;
+			position: fixed;
+			z-index: 1000;
+			left: 0;
+			top: 0;
+			width: 100%;
+			height: 100%;
+			background-color: rgba(0,0,0,0.4);
+		}
+
+		.modal-content {
+			background-color: #fefefe;
+			margin: 15% auto;
+			padding: 20px;
+			border: 1px solid #888;
+			width: 300px;
+		}
+
+		.move-board-btn {
+			background-color: #9C27B0;
+		}
+
+		.move-board-btn:hover {
+			background-color: #7B1FA2;
+		}
+		
+		.legend {
+			margin: 20px;
+			padding: 10px;
+			border: 1px solid #ccc;
+			border-radius: 5px;
+			background-color: #f9f9f9;
+		}
+
+		.legend h3 {
+			margin-top: 0;
+		}
+
+		.legend ul {
+			list-style-type: none;
+			padding: 0;
+		}
+
+		.legend li {
+			display: flex;
+			align-items: center;
+			margin-bottom: 5px;
+		}
+
+		.priority-color {
+			display: inline-block;
+			width: 20px;
+			height: 20px;
+			margin-right: 10px;
+			border-radius: 3px;
+		}
+
+		.priority-color.high {
+			background-color: #f44336; /* Red for high priority */
+		}
+
+		.priority-color.medium {
+			background-color: #ff9800; /* Orange for medium priority */
+		}
+
+		.priority-color.low {
+			background-color: #4caf50; /* Green for low priority */
+		}
+
+        .task-timestamp {
+            font-size: 12px; /* Adjust the font size */
+            color: #888; /* Change the text color */
+            font-style: italic; /* Make the text italic */
+            margin-top: 5px; /* Add some space above the timestamp */
+            text-align: right; /* Align the text to the right */
+        }
+    </style>
+</head>
+<body>
+    <h1>Simple Kanban Board</h1>
+    <div class="navbar">
+        <div class="boards">
+            <label for="board-select">Select Board:</label>
+            <select id="board-select" onchange="switchBoard()">
+                <!-- Options will be populated by JavaScript -->
+            </select>
+            <button onclick="createBoard()">Create New Board</button>
+            <button onclick="deleteBoard()">Delete Current Board</button>
+			<button onclick="renameBoard()">Rename Board</button>
+        </div>
+		<div class="import-export">
+            <button onclick="exportBoard()">Export Board</button>
+            <button onclick="importBoard()">Import Board</button>
+        </div>
+        <div class="search">
+            <input type="text" id="search-input" placeholder="Search tasks (comma-separated)">
+            <button onclick="searchTasks()">Search</button>
+            <button onclick="clearSearch()">Clear Search</button>
+        </div>
+    </div>
+	
+    <div class="board-container" id="board-container">
+        <!-- Columns will be dynamically generated based on the selected board -->
+    </div>
+	
+	<div id="priority-legend" class="legend">
+    <h3>Priority Legend</h3>
+		<ul>
+			<li><span class="priority-color high"></span> High Priority</li>
+			<li><span class="priority-color medium"></span> Medium Priority</li>
+			<li><span class="priority-color low"></span> Low Priority</li>
+		</ul>
+	</div>
+
+    <script>
+        // Initialize Boards
+        let boards = JSON.parse(localStorage.getItem('kanbanBoards')) || {};
+        let currentBoard = localStorage.getItem('currentBoard') || null;
+
+        // If no boards exist, create a default board
+        if (Object.keys(boards).length === 0) {
+            boards['Default Board'] = {
+                backlog: [],
+                todo: [],
+                inprogress: [],
+                done: []
+            };
+            currentBoard = 'Default Board';
+            localStorage.setItem('currentBoard', currentBoard);
+            localStorage.setItem('kanbanBoards', JSON.stringify(boards));
+        }
+
+        // Populate Board Selection Dropdown
+        function populateBoardSelect() {
+            const boardSelect = document.getElementById('board-select');
+            boardSelect.innerHTML = '';
+            for (let boardName in boards) {
+                const option = document.createElement('option');
+                option.value = boardName;
+                option.textContent = boardName;
+                if (boardName === currentBoard) {
+                    option.selected = true;
+                }
+                boardSelect.appendChild(option);
+            }
+        }
+
+        // Create a New Board
+        function createBoard() {
+            const boardName = prompt('Enter the name for the new board:');
+            if (boardName && !boards.hasOwnProperty(boardName)) {
+                boards[boardName] = {
+                    backlog: [],
+                    todo: [],
+                    inprogress: [],
+                    done: []
+                };
+                currentBoard = boardName;
+                saveBoards();
+                populateBoardSelect();
+                renderBoard();
+            } else if (boards.hasOwnProperty(boardName)) {
+                alert('A board with this name already exists.');
+            }
+        }
+
+        // Delete the Current Board
+        function deleteBoard() {
+            if (Object.keys(boards).length === 1) {
+                alert('Cannot delete the only remaining board.');
+                return;
+            }
+            const confirmDelete = confirm(`Are you sure you want to delete the board "${currentBoard}"?`);
+            if (confirmDelete) {
+                delete boards[currentBoard];
+                currentBoard = Object.keys(boards)[0];
+                saveBoards();
+                populateBoardSelect();
+                renderBoard();
+            }
+        }
+
+        // Switch to a Different Board
+        function switchBoard() {
+            const boardSelect = document.getElementById('board-select');
+            currentBoard = boardSelect.value;
+            localStorage.setItem('currentBoard', currentBoard);
+            renderBoard();
+        }
+
+        // Save Boards to LocalStorage
+        function saveBoards() {
+            localStorage.setItem('kanbanBoards', JSON.stringify(boards));
+            localStorage.setItem('currentBoard', currentBoard);
+        }
+
+		// Export Board Data
+        function exportBoard() {
+            const boardData = boards[currentBoard];
+            const jsonData = JSON.stringify(boardData, null, 2); // Indented JSON for readability
+            const blob = new Blob([jsonData], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${saveDate(new Date().toJSON())} ${currentBoard}.json`; // Filename based on board name
+            link.click();
+            URL.revokeObjectURL(url); // Clean up
+        }
+
+        // Import Board Data
+        function importBoard() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'application/json';
+            input.onchange = function(event) {
+                const file = event.target.files[0];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const importedData = JSON.parse(e.target.result);
+                        const boardName = prompt('Enter a name for the imported board:', file.name.replace('.json', ''));
+                        if (boardName) {
+                            boards[boardName] = importedData;
+                            currentBoard = boardName;
+                            saveBoards();
+                            populateBoardSelect();
+                            renderBoard();
+                        }
+                    } catch (error) {
+                        alert('Error importing board data. Please ensure the file is valid JSON.');
+                        console.error('Import error:', error);
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+
+        // Render the Current Board
+        function renderBoard() {
+            const boardContainer = document.getElementById('board-container');
+            boardContainer.innerHTML = '';
+
+            const columns = ['backlog', 'todo', 'inprogress', 'done'];
+            const columnTitles = {
+                backlog: 'Backlog',
+                todo: 'To Do',
+                inprogress: 'In Progress',
+                done: 'Done'
+            };
+
+            columns.forEach(columnId => {
+                // Create Column Element
+                const column = document.createElement('div');
+                column.className = 'column';
+                column.id = columnId;
+                column.ondrop = drop;
+                column.ondragover = allowDrop;
+                column.ondragleave = clearDragOver;
+
+                // Column Header
+                const header = document.createElement('h2');
+                header.textContent = columnTitles[columnId];
+                column.appendChild(header);
+
+                // Tasks Container
+                const tasksDiv = document.createElement('div');
+                tasksDiv.className = 'tasks';
+                column.appendChild(tasksDiv);
+
+                // Populate Tasks
+                boards[currentBoard][columnId].forEach(taskData => {
+                    const task = createTaskElement(taskData, columnId);
+                    tasksDiv.appendChild(task);
+                });
+
+                // Add Task Form (Only for Backlog and To Do Columns)
+                if (columnId === 'backlog' || columnId === 'todo') {
+                    const addTaskDiv = document.createElement('div');
+                    addTaskDiv.className = 'add-task';
+                    addTaskDiv.innerHTML = `
+                        <input type="text" id="new-${columnId}-title" placeholder="New task title" required>
+                        <input type="date" id="new-${columnId}-date">
+                        <input type="text" id="new-${columnId}-reference" placeholder="Reference (optional)">
+                        <input type="text" id="new-${columnId}-assignee" placeholder="Assignee (optional)">
+                        <select id="new-${columnId}-priority">
+                            <option value="">Select Priority</option>
+                            <option value="high">High Priority</option>
+                            <option value="medium">Medium Priority</option>
+                            <option value="low">Low Priority</option>
+                        </select>
+                        <input type="text" id="new-${columnId}-labels" placeholder="Labels (comma separated)">
+                        <button onclick="addTask('${columnId}')">Add Task</button>
+                    `;
+                    column.appendChild(addTaskDiv);
+                }
+
+                // Append Column to Board Container
+                boardContainer.appendChild(column);
+            });
+        }
+		
+        // Create Task Element
+        function createTaskElement(taskData, columnId) {
+            const { title, dueDate, reference, assignee, priority, labels, lastMoved, id } = taskData;
+            const task = document.createElement('div');
+            task.className = `task${priority ? ` priority-${priority}` : ''}`;
+            task.draggable = true;
+            task.id = id || `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+            task.dataset.columnId = columnId;
+            task.dataset.lastMoved = lastMoved;
+
+            // Task Inner HTML
+            task.innerHTML = `
+                <div class="task-timestamp">Last moved: ${formatDate(lastMoved)}</div>
+                <div class="task-title">${title}</div>
+                <div class="task-details">
+                    ${dueDate ? `<div>Due: ${dueDate}</div>` : ''}
+                    ${assignee ? `<div>Assignee: ${assignee}</div>` : ''}
+                    ${reference ? `<div>Ref: ${reference}</div>` : ''}
+                    ${priority ? `<div>Priority: ${capitalize(priority)}</div>` : ''}
+                </div>
+                ${labels.length ? `<div class="task-labels">${labels.map(label => `<span class="task-label">${label}</span>`).join('')}</div>` : ''}
+                <div class="task-buttons">
+                    <div>
+                        <button class="edit-btn" onclick="editTask(this)">Edit</button>
+                        <button class="delete-btn" onclick="deleteTask(this)">Delete</button>
+						<button class="move-board-btn" onclick="showMoveToBoardModal(this)">Move to Board</button>
+                    </div>
+                </div>
+                <div class="edit-form">
+                    <input type="text" class="edit-title" value="${title}" required>
+                    <input type="date" class="edit-date" value="${dueDate}">
+                    <input type="text" class="edit-reference" value="${reference}">
+                    <input type="text" class="edit-assignee" value="${assignee}">
+                    <select class="edit-priority">
+                        <option value="">Select Priority</option>
+                        <option value="high" ${priority === 'high' ? 'selected' : ''}>High Priority</option>
+                        <option value="medium" ${priority === 'medium' ? 'selected' : ''}>Medium Priority</option>
+                        <option value="low" ${priority === 'low' ? 'selected' : ''}>Low Priority</option>
+                    </select>
+                    <input type="text" class="edit-labels" value="${labels.join(', ')}" placeholder="Labels (comma separated)">
+                    <button onclick="saveEdit(this)">Save</button>
+                    <button onclick="cancelEdit(this)">Cancel</button>
+                </div>
+            `;
+            // Attach Drag Events
+            task.ondragstart = drag;
+            return task;
+        }
+
+        // Add Task to Column
+        function addTask(columnId) {
+            try {
+                const titleInput = document.getElementById(`new-${columnId}-title`);
+                const dateInput = document.getElementById(`new-${columnId}-date`);
+                const referenceInput = document.getElementById(`new-${columnId}-reference`);
+                const assigneeInput = document.getElementById(`new-${columnId}-assignee`);
+                const priorityInput = document.getElementById(`new-${columnId}-priority`);
+                const labelsInput = document.getElementById(`new-${columnId}-labels`);
+
+                const title = titleInput.value.trim();
+                const dueDate = dateInput.value;
+                const reference = referenceInput.value.trim();
+                const assignee = assigneeInput.value.trim();
+                const priority = priorityInput.value;
+                const labels = labelsInput.value.split(',').map(label => label.trim()).filter(label => label);
+
+                if (!title) {
+                    throw new Error('Task title is required.');
+                }
+
+                const taskData = {
+                    title,
+                    dueDate,
+                    reference,
+                    assignee,
+                    priority,
+                    labels,
+                    lastMoved: new Date().toISOString(),
+                    id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+                };
+
+                boards[currentBoard][columnId].push(taskData);
+                saveBoards();
+                renderBoard();
+            } 
+            catch (error) {
+                alert(`Error adding task: ${error.message}`);
+                console.error('Error adding task:', error);
+            }
+        }
+
+
+        // Move Task Left or Right
+        function moveTask(btn, direction) {
+            const task = btn.closest('.task');
+            const currentColumnId = task.dataset.columnId;
+            const currentColumnIndex = columns.indexOf(currentColumnId);
+            const newColumnIndex = direction === 'left' ? currentColumnIndex - 1 : currentColumnIndex + 1;
+
+            if (newColumnIndex >= 0 && newColumnIndex < columns.length) {
+                const newColumnId = columns[newColumnIndex];
+                // Remove task from current column
+                const taskDataIndex = boards[currentBoard][currentColumnId].findIndex(t => t.id === task.id);
+                if (taskDataIndex > -1) {
+                    const [taskData] = boards[currentBoard][currentColumnId].splice(taskDataIndex, 1);
+                    // Update data
+                    taskData.columnId = newColumnId;
+                    taskData.lastMoved = new Date().toISOString();
+                    // Add to new column
+                    boards[currentBoard][newColumnId].push(taskData);
+                    saveBoards();
+                    renderBoard();
+                }
+            }
+        }
+
+        // Edit Task
+        function editTask(btn) {
+            const task = btn.closest('.task');
+            task.querySelector('.edit-form').style.display = 'block';
+            // Disable dragging while editing
+            task.draggable = false;
+        }
+
+        // Save Edited Task
+        function saveEdit(btn) {
+            try {
+                const task = btn.closest('.task');
+                const titleInput = task.querySelector('.edit-title');
+                const dateInput = task.querySelector('.edit-date');
+                const referenceInput = task.querySelector('.edit-reference');
+                const assigneeInput = task.querySelector('.edit-assignee');
+                const priorityInput = task.querySelector('.edit-priority');
+                const labelsInput = task.querySelector('.edit-labels');
+
+                const title = titleInput.value.trim();
+                const dueDate = dateInput.value;
+                const reference = referenceInput.value.trim();
+                const assignee = assigneeInput.value.trim();
+                const priority = priorityInput.value;
+                const labels = labelsInput.value.split(',').map(label => label.trim()).filter(label => label);
+
+                if (!title) {
+                    throw new Error('Task title is required.');
+                }
+
+                const columnId = task.dataset.columnId;
+                const taskId = task.id;
+                const taskData = boards[currentBoard][columnId].find(t => t.id === taskId);
+                
+                if (!taskData) {
+                    throw new Error('Task not found.');
+                }
+
+                taskData.title = title;
+                taskData.dueDate = dueDate;
+                taskData.reference = reference;
+                taskData.assignee = assignee;
+                taskData.priority = priority;
+                taskData.labels = labels;
+                
+                saveBoards();
+                renderBoard();
+            } catch (error) {
+                alert(`Error saving task: ${error.message}`);
+                console.error('Error saving task:', error);
+            }
+        }
+
+        // Cancel Edit
+        function cancelEdit(btn) {
+            const task = btn.closest('.task');
+            task.querySelector('.edit-form').style.display = 'none';
+            // Re-enable dragging
+            task.draggable = true;
+        }
+
+        // Delete Task
+        function deleteTask(btn) {
+            const task = btn.closest('.task');
+            const columnId = task.dataset.columnId;
+            const taskId = task.id;
+            // Find and remove task data
+            const taskDataIndex = boards[currentBoard][columnId].findIndex(t => t.id === taskId);
+            if (taskDataIndex > -1) {
+                boards[currentBoard][columnId].splice(taskDataIndex, 1);
+                saveBoards();
+                renderBoard();
+            }
+        }
+
+        // Drag and Drop Functions
+        function allowDrop(ev) {
+            ev.preventDefault();
+            ev.currentTarget.classList.add('drag-over');
+        }
+
+        function clearDragOver(ev) {
+            ev.currentTarget.classList.remove('drag-over');
+        }
+
+        function drag(ev) {
+            ev.dataTransfer.setData('text/plain', ev.target.id);
+        }
+
+        function drop(ev) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            ev.currentTarget.classList.remove('drag-over');
+            const taskId = ev.dataTransfer.getData('text/plain');
+            const task = document.getElementById(taskId);
+            if (task && task.dataset.columnId !== ev.currentTarget.id) {
+                const oldColumnId = task.dataset.columnId;
+                const newColumnId = ev.currentTarget.id;
+                // Remove task from old column data
+                const taskDataIndex = boards[currentBoard][oldColumnId].findIndex(t => t.id === taskId);
+                if (taskDataIndex > -1) {
+                    const [taskData] = boards[currentBoard][oldColumnId].splice(taskDataIndex, 1);
+                    // Update data
+                    taskData.columnId = newColumnId;
+                    taskData.lastMoved = new Date().toISOString();
+                    // Add to new column
+                    boards[currentBoard][newColumnId].push(taskData);
+                    saveBoards();
+                    renderBoard();
+                }
+            }
+        }
+
+        // Search function (actual search and display)
+        function searchTasks() {
+            const searchTerms = document.getElementById('search-input').value.toLowerCase().split(',').map(term => term.trim());
+            
+            // Reset all tasks to remove previous highlights
+            document.querySelectorAll('.task').forEach(task => {
+                task.classList.remove('highlight');
+                task.style.display = 'block';
+            });
+
+            if (searchTerms[0] === '') return; // Exit if search is empty
+
+            for (const columnId in boards[currentBoard]) {
+                const tasks = boards[currentBoard][columnId];
+                tasks.forEach((task, index) => {
+                    const taskElement = document.querySelector(`#${task.id}`);
+                    if (!taskElement) return;
+
+                    const isMatch = searchTerms.some(term => 
+                        task.title.toLowerCase().includes(term) ||
+                        task.reference.toLowerCase().includes(term) ||
+                        task.assignee.toLowerCase().includes(term) ||
+                        task.labels.some(label => label.toLowerCase().includes(term)) ||
+                        task.priority.toLowerCase().includes(term)
+                    );
+
+                    if (isMatch) {
+                        taskElement.classList.add('highlight');
+                    } else {
+                        taskElement.style.display = 'none';
+                    }
+                });
+            }
+        }
+
+        // Function to clear the search
+        function clearSearch() {
+            document.getElementById('search-input').value = '';
+            document.querySelectorAll('.task').forEach(task => {
+                task.classList.remove('highlight');
+                task.style.display = 'block';
+            });
+        }
+
+        // Save Boards and Current Board
+        function saveBoards() {
+            localStorage.setItem('kanbanBoards', JSON.stringify(boards));
+            localStorage.setItem('currentBoard', currentBoard);
+        }
+
+        // Load Boards from LocalStorage
+        function loadBoards() {
+            boards = JSON.parse(localStorage.getItem('kanbanBoards')) || {};
+            currentBoard = localStorage.getItem('currentBoard') || Object.keys(boards)[0];
+        }
+
+        // Format Date for Display
+        function formatDate(isoString) {
+            const date = new Date(isoString);
+            return date.toLocaleString();
+        }
+
+        // Save Date for Display
+        function saveDate(saveIsoString) {
+            const date = new Date(saveIsoString);
+            return date.toJSON();
+        }
+
+        // Capitalize Function
+        function capitalize(word) {
+            return word.charAt(0).toUpperCase() + word.slice(1);
+        }
+
+        // Initial Setup
+        function init() {
+            loadBoards();
+            populateBoardSelect();
+            renderBoard();
+        }
+
+        // Run Initial Setup on Page Load
+        window.onload = init;
+		
+		let currentTaskToMove = null;
+
+		function showMoveToBoardModal(btn) {
+			const task = btn.closest('.task');
+			currentTaskToMove = task;
+			const modal = document.getElementById('move-board-modal');
+			const select = document.getElementById('destination-board-select');
+			select.innerHTML = '';
+			
+			for (let boardName in boards) {
+				if (boardName !== currentBoard) {
+					const option = document.createElement('option');
+					option.value = boardName;
+					option.textContent = boardName;
+					select.appendChild(option);
+				}
+			}
+			
+			modal.style.display = 'block';
+		}
+
+		function closeMoveToBoard() {
+			document.getElementById('move-board-modal').style.display = 'none';
+			currentTaskToMove = null;
+		}
+
+		function moveTaskToBoard() {
+			if (!currentTaskToMove) return;
+			
+			const destinationBoard = document.getElementById('destination-board-select').value;
+			const taskId = currentTaskToMove.id;
+			const currentColumnId = currentTaskToMove.dataset.columnId;
+			
+			// Find and remove task from current board
+			const taskIndex = boards[currentBoard][currentColumnId].findIndex(t => t.id === taskId);
+			if (taskIndex > -1) {
+				const [taskData] = boards[currentBoard][currentColumnId].splice(taskIndex, 1);
+				
+				// Add task to destination board's backlog
+				boards[destinationBoard].backlog.push(taskData);
+				
+				saveBoards();
+				renderBoard();
+				closeMoveToBoard();
+			}
+		}
+		
+		// Saves the boards
+		function saveBoards() {
+			localStorage.setItem('kanbanBoards', JSON.stringify(boards));
+			localStorage.setItem('currentBoard', currentBoard);
+		}
+		
+		// Rename Board
+		function renameBoard() {
+			const newBoardName = prompt('Enter the new name for the board:');
+			if (newBoardName && newBoardName !== currentBoard && !boards.hasOwnProperty(newBoardName)) {
+				// Rename the board
+				boards[newBoardName] = boards[currentBoard];
+				delete boards[currentBoard];
+				currentBoard = newBoardName;
+				saveBoards();
+				populateBoardSelect();
+				renderBoard();
+			} else if (boards.hasOwnProperty(newBoardName)) {
+				alert('A board with this name already exists.');
+			} else if (newBoardName === currentBoard) {
+				alert('The new name is the same as the current name.');
+			}
+		}
+    </script>
+	
+	<div id="move-board-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <h3>Move to Board</h3>
+        <select id="destination-board-select">
+            <!-- Options will be populated by JavaScript -->
+        </select>
+        <button onclick="moveTaskToBoard()">Move</button>
+        <button onclick="closeMoveToBoard()">Cancel</button>
+    </div>
+	
+</div>
+</body>
+</html>
