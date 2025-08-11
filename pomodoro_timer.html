@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Pomodoro Timer</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            transition: background-color 0.5s;
+            color: #fff;
+            text-align: center;
+            background: linear-gradient(135deg, #2c3e50, #e74c3c);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        h1 {
+            margin-bottom: 10px;
+        }
+        #message {
+            margin-bottom: 20px;
+        }
+        #timer-container {
+            position: relative;
+            width: 200px;
+            height: 200px;
+        }
+        #timer {
+            font-size: 2em;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        svg {
+            transform: rotate(-90deg);
+        }
+        circle {
+            fill: none;
+            stroke-width: 10;
+        }
+        .progress-circle {
+            stroke: #fff;
+            stroke-dasharray: 597;
+            stroke-dashoffset: 597;
+            transition: stroke-dashoffset 0.95s linear;
+        }
+        #controls {
+            margin-top: 20px;
+        }
+        button {
+            font-size: 1em;
+            padding: 10px 20px;
+            margin: 20px 10px 0 10px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 5px;
+            color: #fff;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        .time-control {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            margin-bottom: 10px;
+        }
+        .time-control label {
+            flex: 1;
+            text-align: right;
+            margin-right: 10px;
+        }
+        .time-control-buttons {
+            display: flex;
+            align-items: center;
+        }
+        .time-control button {
+            font-size: 1em;
+            padding: 5px 10px;
+            margin: 0;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: #fff;
+            transition: background 0.3s;
+        }
+        .time-control button:first-child {
+            border-top-left-radius: 5px;
+            border-bottom-left-radius: 5px;
+        }
+        .time-control button:last-child {
+            border-top-right-radius: 5px;
+            border-bottom-right-radius: 5px;
+        }
+        .time-control button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        .time-display {
+            width: 40px;
+            font-size: 1em;
+            padding: 5px 0;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: #fff;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>pomodoro</h1>
+    <div id="message">press start to begin</div>
+    <div id="timer-container">
+        <svg width="200" height="200">
+            <circle class="progress-circle" cx="100" cy="100" r="95"></circle>
+        </svg>
+        <div id="timer">20:00</div>
+    </div>
+    <div id="controls">
+        <div class="time-control">
+            <label>Arbeitszeit (Minuten):</label>
+            <div class="time-control-buttons">
+                <button class="decrease-btn" data-target="work-duration">-</button>
+                <span id="work-duration" class="time-display">20</span>
+                <button class="increase-btn" data-target="work-duration">+</button>
+            </div>
+        </div>
+        <div class="time-control">
+            <label>Kurze Pause (Minuten):</label>
+            <div class="time-control-buttons">
+                <button class="decrease-btn" data-target="short-break-duration">-</button>
+                <span id="short-break-duration" class="time-display">3</span>
+                <button class="increase-btn" data-target="short-break-duration">+</button>
+            </div>
+        </div>
+        <div class="time-control">
+            <label>Lange Pause (Minuten):</label>
+            <div class="time-control-buttons">
+                <button class="decrease-btn" data-target="long-break-duration">-</button>
+                <span id="long-break-duration" class="time-display">15</span>
+                <button class="increase-btn" data-target="long-break-duration">+</button>
+            </div>
+        </div>
+        <br>
+        <button id="start-btn">Start</button>
+        <button id="pause-btn">Pause</button>
+        <button id="reset-btn">Reset</button>
+    </div>
+
+    <script>
+        let timerDisplay = document.getElementById('timer');
+        let startBtn = document.getElementById('start-btn');
+        let pauseBtn = document.getElementById('pause-btn');
+        let resetBtn = document.getElementById('reset-btn');
+        let workDurationDisplay = document.getElementById('work-duration');
+        let shortBreakDisplay = document.getElementById('short-break-duration');
+        let longBreakDisplay = document.getElementById('long-break-duration');
+        let progressCircle = document.querySelector('.progress-circle');
+
+        let timer;
+        let isRunning = false;
+        let isPaused = false;
+        let timeLeft;
+        let totalTime;
+        let sessionType = 'Arbeitszeit';
+        let cycles = 0;
+
+        function startTimer(duration) {
+            clearInterval(timer);
+            timeLeft = duration;
+            totalTime = duration;
+            updateDisplay();
+            updateBackground();
+            updateProgressCircleColor();
+            timer = setInterval(() => {
+                if (!isPaused) {
+                    timeLeft--;
+                    updateDisplay();
+                    updateProgressCircle();
+                    if (timeLeft < 1) {
+                        cycles++;
+                        playSound();
+                        clearInterval(timer);
+                        if (sessionType === 'Arbeitszeit') {
+                            if (cycles % 4 === 0) {
+                                sessionType = 'Lange Pause';
+                                startTimer(parseInt(longBreakDisplay.textContent) * 60);
+                            } else {
+                                sessionType = 'Kurze Pause';
+                                startTimer(parseInt(shortBreakDisplay.textContent) * 60);
+                            }
+                        } else {
+                            sessionType = 'Arbeitszeit';
+                            startTimer(parseInt(workDurationDisplay.textContent) * 60);
+                        }
+                    }
+                }
+            }, 1000);
+        }
+
+        function updateDisplay() {
+            let minutes = Math.floor(timeLeft / 60);
+            let seconds = timeLeft % 60;
+            timerDisplay.textContent = `${minutes < 10 ? '0' : ''}${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+        }
+
+        function updateBackground() {
+            if (sessionType === 'Arbeitszeit') {
+                document.body.style.background = 'linear-gradient(135deg, #2c3e50, #e74c3c)';
+            } else if (sessionType === 'Kurze Pause') {
+                document.body.style.background = 'linear-gradient(135deg, #2c3e50, #3498db)';
+            } else {
+                document.body.style.background = 'linear-gradient(135deg, #2c3e50, #2ecc71)';
+            }
+        }
+
+        function updateProgressCircle() {
+            let percent = (timeLeft / totalTime) * 597;
+            progressCircle.style.strokeDashoffset = 597 - percent;
+        }
+
+        function updateProgressCircleColor() {
+            if (sessionType === 'Arbeitszeit') {
+                progressCircle.style.stroke = '#fff';
+            } else if (sessionType === 'Kurze Pause') {
+                progressCircle.style.stroke = '#fff';
+            } else {
+                progressCircle.style.stroke = '#fff';
+            }
+        }
+
+        function playSound() {
+            let audio = new Audio('https://www.soundjay.com/buttons/sounds/beep-07.mp3');
+            audio.play();
+        }
+
+        function updateTimeValue(id, increment) {
+            let element = document.getElementById(id);
+            let currentValue = parseInt(element.textContent);
+            let newValue = Math.max(1, currentValue + increment);
+            element.textContent = newValue;
+        }
+
+        document.querySelectorAll('.decrease-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                updateTimeValue(btn.dataset.target, -1);
+            });
+        });
+
+        document.querySelectorAll('.increase-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                updateTimeValue(btn.dataset.target, 1);
+            });
+        });
+
+        startBtn.addEventListener('click', () => {
+            if (!isRunning) {
+                isRunning = true;
+                isPaused = false;
+                sessionType = 'Arbeitszeit';
+                cycles = 0;
+                startTimer(parseInt(workDurationDisplay.textContent) * 60);
+            } else if (isPaused) {
+                isPaused = false;
+            }
+        });
+
+        pauseBtn.addEventListener('click', () => {
+            isPaused = true;
+        });
+
+        resetBtn.addEventListener('click', () => {
+            clearInterval(timer);
+            isRunning = false;
+            isPaused = false;
+            timeLeft = parseInt(workDurationDisplay.textContent) * 60;
+            totalTime = timeLeft;
+            sessionType = 'Arbeitszeit';
+            cycles = 0;
+            updateDisplay();
+            updateBackground();
+            updateProgressCircle();
+            updateProgressCircleColor();
+        });
+    </script>
+</body>
+</html>
